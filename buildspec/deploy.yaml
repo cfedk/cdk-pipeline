@@ -1,0 +1,11 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+    - tar -xzf build.tar.gz ./
+  build:
+    commands:
+    - npm run deploy -- -- -- --require-approval never $STACK_NAME

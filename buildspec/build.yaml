@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+    - npm install
+  build:
+    commands:
+    - npm run build
+    - npm run test
+    - npm run synth
+    # CodePipelines/Build artifacts kill symlinks.
+    # Tar build output ourselves to preserve symlinks.
+    - tar -czf build.tar.gz ./*
+
+artifacts:
+  files:
+    - 'build.tar.gz'
+
