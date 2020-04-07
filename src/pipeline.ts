@@ -10,27 +10,74 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 
 interface ManualApprovalRequired {
+    /**
+     * Send a notification to this email address when a manual approval is required.
+     */
     approvalNotificationEmail?: string;
+
+    /**
+     * Send an SNS message to this topic when a manual approval is required.
+     */
     approvalNotificationTopic?: sns.ITopic;
 }
 
 type ManualApprovalConfiguration = ManualApprovalRequired | false;
 
 export interface StageDefinition {
+    /**
+     * "Beta", "Prod", etc.
+     */
     stageName: string;
+
+    /**
+     * Stack to deploy in this stage.
+     */
     stack: cdk.Stack;
+
+    /**
+     * Configure manual approval requirements.
+     * @default false;
+     */
     manualApproval: ManualApprovalConfiguration;
 }
 
 export interface SourceConfiguration {
+    /**
+     * https://github.com/<owner>/<repository>
+     */
     repository: string;
+
+    /**
+     * https://github.com/<owner>/<repository>
+     */
     owner: string;
+
+    /**
+     * Name of key to which the Github access token is saved in SecretsManager.
+     * Must be stored in the same region as the pipeline is being deployed to.
+     *
+     * `aws secretsmanager create-secret --name <oauthTokenName> --secret-string <github-secret> --region <pipeline-region>`
+     *
+     * The access token must have access to the repository in question and the permissions to create web hooks.
+     */
     oauthTokenName: string;
 }
 
 export interface DeploymentPipelineProps {
+
+    /**
+     * Describe the repository which triggers pipeline deployments.
+     */
     sourceConfiguration: SourceConfiguration,
+
+    /**
+     * Configure manual approval after pipeline deployments.
+     */
     manualApproval: ManualApprovalConfiguration,
+
+    /**
+     * List of stages in deployment order.
+     */
     deploymentStages: StageDefinition[],
 }
 
@@ -47,6 +94,9 @@ export class DeploymentPipeline extends cdk.Stack {
     }
 }
 
+/**
+ * Visible for consumers which already have their own stack defined.
+ */
 export class DeploymentPipelineConstruct extends cdk.Construct {
 
     readonly pipeline: codepipeline.Pipeline;
