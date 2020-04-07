@@ -1,6 +1,6 @@
 {
   "name": "@cfedk/cdk-pipeline",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Self-mutating pipeline for cdk-based applications",
   "author": "Conrad de Kerckhove <conrad.dekerckhove@gmail.com>",
   "homepage": "https://github.com/cfedk/cdk-pipeline#readme",
@@ -35,9 +35,9 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-codebuild": "^1.31.0",
-    "@aws-cdk/aws-codepipeline": "^1.31.0",
-    "@aws-cdk/aws-codepipeline-actions": "^1.31.0",
-    "@aws-cdk/core": "1.31.0"
+    "@aws-cdk/aws-codebuild": "^1.32.0",
+    "@aws-cdk/aws-codepipeline": "^1.32.0",
+    "@aws-cdk/aws-codepipeline-actions": "^1.32.0",
+    "@aws-cdk/core": "1.32.0"
   }
 }
