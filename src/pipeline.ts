@@ -3,14 +3,23 @@ import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as codepipeline from '@aws-cdk/aws-codepipeline';
 import * as actions from '@aws-cdk/aws-codepipeline-actions';
 import * as iam from '@aws-cdk/aws-iam';
+import * as sns from '@aws-cdk/aws-sns';
 
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 
+interface ManualApprovalRequired {
+    approvalNotificationEmail?: string;
+    approvalNotificationTopic?: sns.ITopic;
+}
+
+type ManualApprovalConfiguration = ManualApprovalRequired | false;
+
 export interface StageDefinition {
-    stageName: string; // Beta, Prod, etc.
-    stack: cdk.Stack; // CDK stack to deploy in this region
+    stageName: string;
+    stack: cdk.Stack;
+    manualApproval: ManualApprovalConfiguration;
 }
 
 export interface SourceConfiguration {
@@ -21,6 +30,7 @@ export interface SourceConfiguration {
 
 export interface DeploymentPipelineProps {
     sourceConfiguration: SourceConfiguration,
+    manualApproval: ManualApprovalConfiguration,
     deploymentStages: StageDefinition[],
 }
 
@@ -82,6 +92,8 @@ export class DeploymentPipelineConstruct extends cdk.Construct {
             input: buildActionOutput,
         }));
 
+        this.addManualApproval(pipelineStage, props.manualApproval);
+
         props.deploymentStages.forEach((stageDefinition) => {
 
             const stage = this.pipeline.addStage({
@@ -93,7 +105,30 @@ export class DeploymentPipelineConstruct extends cdk.Construct {
                 project: this.deployCodeBuildProject(stageDefinition.stack),
                 input: buildActionOutput,
             }));
+
+            this.addManualApproval(stage, stageDefinition.manualApproval)
         });
+    }
+
+    private addManualApproval(stage: codepipeline.IStage, manualApprovalConfig: ManualApprovalConfiguration) {
+
+        if (!manualApprovalConfig) {
+            return;
+        }
+
+        const notifyEmails = manualApprovalConfig.approvalNotificationEmail
+                ? [manualApprovalConfig.approvalNotificationEmail]
+                : [];
+
+        const notificationTopic = manualApprovalConfig.approvalNotificationTopic;
+
+        console.log("Adding step");
+
+        stage.addAction(new actions.ManualApprovalAction({
+            actionName: 'ManualApproval',
+            notifyEmails,
+            notificationTopic,
+        }));
     }
 
     private buildCodeBuildProject(): codebuild.PipelineProject {
