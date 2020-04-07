@@ -2,58 +2,130 @@ import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as codepipeline from '@aws-cdk/aws-codepipeline';
 import * as actions from '@aws-cdk/aws-codepipeline-actions';
-
 import * as iam from '@aws-cdk/aws-iam';
+import * as sns from '@aws-cdk/aws-sns';
 
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 
+interface ManualApprovalRequired {
+    /**
+     * Send a notification to this email address when a manual approval is required.
+     */
+    approvalNotificationEmail?: string;
+
+    /**
+     * Send an SNS message to this topic when a manual approval is required.
+     */
+    approvalNotificationTopic?: sns.ITopic;
+}
+
+type ManualApprovalConfiguration = ManualApprovalRequired | false;
+
 export interface StageDefinition {
-    stageName: string; // Beta, Prod, etc.
-    stack: cdk.Stack; // CDK stack to deploy in this region
+    /**
+     * "Beta", "Prod", etc.
+     */
+    stageName: string;
+
+    /**
+     * Stack to deploy in this stage.
+     */
+    stack: cdk.Stack;
+
+    /**
+     * Configure manual approval requirements.
+     * @default false;
+     */
+    manualApproval: ManualApprovalConfiguration;
 }
 
 export interface SourceConfiguration {
+    /**
+     * https://github.com/<owner>/<repository>
+     */
     repository: string;
+
+    /**
+     * https://github.com/<owner>/<repository>
+     */
     owner: string;
+
+    /**
+     * Name of key to which the Github access token is saved in SecretsManager.
+     * Must be stored in the same region as the pipeline is being deployed to.
+     *
+     * `aws secretsmanager create-secret --name <oauthTokenName> --secret-string <github-secret> --region <pipeline-region>`
+     *
+     * The access token must have access to the repository in question and the permissions to create web hooks.
+     */
     oauthTokenName: string;
 }
 
 export interface DeploymentPipelineProps {
+
+    /**
+     * Describe the repository which triggers pipeline deployments.
+     */
     sourceConfiguration: SourceConfiguration,
+
+    /**
+     * Configure manual approval after pipeline deployments.
+     */
+    manualApproval: ManualApprovalConfiguration,
+
+    /**
+     * List of stages in deployment order.
+     */
+    deploymentStages: StageDefinition[],
 }
 
 export class DeploymentPipeline extends cdk.Stack {
 
-    pipeline: codepipeline.Pipeline;
+    constructor(
+        scope: cdk.Construct,
+        stackName: string,
+        stackProps: cdk.StackProps,
+        props: DeploymentPipelineProps,
+    ) {
+        super(scope, `${stackName}Pipeline`, stackProps);
+
+        // tslint:disable-next-line:no-unused-expression
+        new DeploymentPipelineConstruct(this, props);
+    }
+}
+
+/**
+ * Visible for consumers which already have their own stack defined.
+ */
+export class DeploymentPipelineConstruct extends cdk.Construct {
+
+    readonly pipeline: codepipeline.Pipeline;
 
     constructor(
             scope: cdk.Construct,
-            id: string,
-            stackProps: cdk.StackProps,
-            sourceConfiguration: SourceConfiguration,
-            deploymentStages: StageDefinition[],
+            props: DeploymentPipelineProps,
         ) {
 
-        super(scope, id, stackProps);
+        super(scope, 'DeploymentPipeline');
 
         const sourceActionOutput = new codepipeline.Artifact('Source');
         const buildActionOutput = new codepipeline.Artifact('Builds');
 
-        const pipeline = new codepipeline.Pipeline(this, 'DP', { pipelineName: 'DeploymentPipeline' });
+        this.pipeline = new codepipeline.Pipeline(this, 'Pipeline', { pipelineName: 'DeploymentPipeline' });
 
-        const source = pipeline.addStage({ stageName: 'SourceStage' });
+        const source = this.pipeline.addStage({ stageName: 'SourceStage' });
 
         source.addAction(new actions.GitHubSourceAction({
             actionName: 'SourceAction',
-            repo: sourceConfiguration.repository,
-            owner: sourceConfiguration.owner,
-            oauthToken: cdk.SecretValue.secretsManager(sourceConfiguration.oauthTokenName),
+            repo: props.sourceConfiguration.repository,
+            owner: props.sourceConfiguration.owner,
+            oauthToken: cdk.SecretValue.secretsManager(props.sourceConfiguration.oauthTokenName),
             output: sourceActionOutput,
         }));
 
-        const buildStage = pipeline.addStage({ stageName: 'BuildStage' });
+        const buildStage = this.pipeline.addStage({ stageName: 'BuildStage' });
 
         buildStage.addAction(new actions.CodeBuildAction({
             actionName: 'BuildAction',
@@ -62,26 +134,51 @@ export class DeploymentPipeline extends cdk.Stack {
             outputs: [ buildActionOutput ],
         }));
 
-        const piplineStage = pipeline.addStage({
+        const pipelineStage = this.pipeline.addStage({
             stageName: 'DeployPipelineStage',
         });
 
-        piplineStage.addAction(new actions.CodeBuildAction({
+        pipelineStage.addAction(new actions.CodeBuildAction({
             actionName: 'DeployPipelineAction',
             project: this.deployCodeBuildProject(cdk.Stack.of(this)),
             input: buildActionOutput,
         }));
 
-        deploymentStages.forEach((stageDefinition) => {
-            const stage = pipeline.addStage({
+        this.addManualApproval(pipelineStage, props.manualApproval);
+
+        props.deploymentStages.forEach((stageDefinition) => {
+
+            const stage = this.pipeline.addStage({
                 stageName: `Deploy${stageDefinition.stageName}Stage`,
             });
+
             stage.addAction(new actions.CodeBuildAction({
                 actionName: `Deploy${stageDefinition.stageName}Action`,
                 project: this.deployCodeBuildProject(stageDefinition.stack),
                 input: buildActionOutput,
             }));
+
+            this.addManualApproval(stage, stageDefinition.manualApproval)
         });
+    }
+
+    private addManualApproval(stage: codepipeline.IStage, manualApprovalConfig: ManualApprovalConfiguration) {
+
+        if (!manualApprovalConfig) {
+            return;
+        }
+
+        const notifyEmails = manualApprovalConfig.approvalNotificationEmail
+                ? [manualApprovalConfig.approvalNotificationEmail]
+                : [];
+
+        const notificationTopic = manualApprovalConfig.approvalNotificationTopic;
+
+        stage.addAction(new actions.ManualApprovalAction({
+            actionName: 'ManualApproval',
+            notifyEmails,
+            notificationTopic,
+        }));
     }
 
     private buildCodeBuildProject(): codebuild.PipelineProject {
