@@ -90,6 +90,8 @@ export class DeploymentPipeline extends cdk.Stack {
         props: DeploymentPipelineProps,
     ) {
         super(scope, `${stackName}Pipeline`, stackProps);
+
+        // tslint:disable-next-line:no-unused-expression
         new DeploymentPipelineConstruct(this, props);
     }
 }
@@ -171,8 +173,6 @@ export class DeploymentPipelineConstruct extends cdk.Construct {
                 : [];
 
         const notificationTopic = manualApprovalConfig.approvalNotificationTopic;
-
-        console.log("Adding step");
 
         stage.addAction(new actions.ManualApprovalAction({
             actionName: 'ManualApproval',

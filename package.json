@@ -27,6 +27,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "test:watch": "jest --watchAll",
+    "lint": "tslint -p tsconfig.json",
+    "prepublishOnly": "npm run test && npm run lint",
     "clean": "rm -rf dist/*"
   },
   "devDependencies": {
@@ -36,8 +38,11 @@
     "@types/node": "10.17.5",
     "jest": "^25.2.7",
     "js-yaml": "^3.13.1",
+    "prettier": "^2.0.4",
     "ts-jest": "^25.3.1",
     "ts-node": "^8.1.0",
+    "tslint": "^6.1.1",
+    "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.8.3"
   },
   "dependencies": {
