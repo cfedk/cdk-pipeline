@@ -2,7 +2,6 @@ import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as codepipeline from '@aws-cdk/aws-codepipeline';
 import * as actions from '@aws-cdk/aws-codepipeline-actions';
-
 import * as iam from '@aws-cdk/aws-iam';
 
 import * as path from 'path';
@@ -22,38 +21,49 @@ export interface SourceConfiguration {
 
 export interface DeploymentPipelineProps {
     sourceConfiguration: SourceConfiguration,
+    deploymentStages: StageDefinition[],
 }
 
 export class DeploymentPipeline extends cdk.Stack {
 
-    pipeline: codepipeline.Pipeline;
+    constructor(
+        scope: cdk.Construct,
+        stackName: string,
+        stackProps: cdk.StackProps,
+        props: DeploymentPipelineProps,
+    ) {
+        super(scope, `${stackName}Pipeline`, stackProps);
+        new DeploymentPipelineConstruct(this, props);
+    }
+}
+
+export class DeploymentPipelineConstruct extends cdk.Construct {
+
+    readonly pipeline: codepipeline.Pipeline;
 
     constructor(
             scope: cdk.Construct,
-            id: string,
-            stackProps: cdk.StackProps,
-            sourceConfiguration: SourceConfiguration,
-            deploymentStages: StageDefinition[],
+            props: DeploymentPipelineProps,
         ) {
 
-        super(scope, id, stackProps);
+        super(scope, 'DeploymentPipeline');
 
         const sourceActionOutput = new codepipeline.Artifact('Source');
         const buildActionOutput = new codepipeline.Artifact('Builds');
 
-        const pipeline = new codepipeline.Pipeline(this, 'DP', { pipelineName: 'DeploymentPipeline' });
+        this.pipeline = new codepipeline.Pipeline(this, 'Pipeline', { pipelineName: 'DeploymentPipeline' });
 
-        const source = pipeline.addStage({ stageName: 'SourceStage' });
+        const source = this.pipeline.addStage({ stageName: 'SourceStage' });
 
         source.addAction(new actions.GitHubSourceAction({
             actionName: 'SourceAction',
-            repo: sourceConfiguration.repository,
-            owner: sourceConfiguration.owner,
-            oauthToken: cdk.SecretValue.secretsManager(sourceConfiguration.oauthTokenName),
+            repo: props.sourceConfiguration.repository,
+            owner: props.sourceConfiguration.owner,
+            oauthToken: cdk.SecretValue.secretsManager(props.sourceConfiguration.oauthTokenName),
             output: sourceActionOutput,
         }));
 
-        const buildStage = pipeline.addStage({ stageName: 'BuildStage' });
+        const buildStage = this.pipeline.addStage({ stageName: 'BuildStage' });
 
         buildStage.addAction(new actions.CodeBuildAction({
             actionName: 'BuildAction',
@@ -62,20 +72,22 @@ export class DeploymentPipeline extends cdk.Stack {
             outputs: [ buildActionOutput ],
         }));
 
-        const piplineStage = pipeline.addStage({
+        const pipelineStage = this.pipeline.addStage({
             stageName: 'DeployPipelineStage',
         });
 
-        piplineStage.addAction(new actions.CodeBuildAction({
+        pipelineStage.addAction(new actions.CodeBuildAction({
             actionName: 'DeployPipelineAction',
             project: this.deployCodeBuildProject(cdk.Stack.of(this)),
             input: buildActionOutput,
         }));
 
-        deploymentStages.forEach((stageDefinition) => {
-            const stage = pipeline.addStage({
+        props.deploymentStages.forEach((stageDefinition) => {
+
+            const stage = this.pipeline.addStage({
                 stageName: `Deploy${stageDefinition.stageName}Stage`,
             });
+
             stage.addAction(new actions.CodeBuildAction({
                 actionName: `Deploy${stageDefinition.stageName}Action`,
                 project: this.deployCodeBuildProject(stageDefinition.stack),
