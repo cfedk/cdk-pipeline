@@ -20,6 +20,8 @@
         "experimentalDecorators": true,
         "strictPropertyInitialization":false
     },
-    "exclude": ["lib"]
+    "exclude": [
+        "lib",
+        "**/*.test.ts"
+    ]
   }
-  

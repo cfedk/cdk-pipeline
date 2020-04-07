@@ -19,18 +19,24 @@
     "type": "git",
     "url": "git+https://github.com/cfedk/cdk-pipeline.git"
   },
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "clean": "rm -rf dist/*"
-  },
   "bugs": {
     "url": "https://github.com/cfedk/cdk-pipeline/issues"
   },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
+    "clean": "rm -rf dist/*"
+  },
   "devDependencies": {
+    "@aws-cdk/assert": "^1.31.0",
+    "@types/jest": "^25.2.1",
     "@types/js-yaml": "^3.12.2",
     "@types/node": "10.17.5",
+    "jest": "^25.2.7",
     "js-yaml": "^3.13.1",
+    "ts-jest": "^25.3.1",
     "ts-node": "^8.1.0",
     "typescript": "^3.8.3"
   },
