@@ -89,7 +89,7 @@ export class DeploymentPipeline extends cdk.Stack {
         stackProps: cdk.StackProps,
         props: DeploymentPipelineProps,
     ) {
-        super(scope, `${stackName}Pipeline`, stackProps);
+        super(scope, stackName, stackProps);
 
         // tslint:disable-next-line:no-unused-expression
         new DeploymentPipelineConstruct(this, props);
