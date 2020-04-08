@@ -1,3 +1,11 @@
+## 0.0.5 (2020-04-08)
+
+
+### Bug Fixes
+
+* don't rewrite stack name ([eac7920](https://github.com/cfedk/cdk-pipeline/commit/eac7920e155229040920d62025d8c8986248ddf4))
+
+
 ## 0.0.4 (2020-04-07)
 
 
