@@ -1,6 +1,6 @@
 {
   "name": "@cfedk/cdk-pipeline",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "Self-mutating pipeline for cdk-based applications",
   "author": "Conrad de Kerckhove <conrad.dekerckhove@gmail.com>",
   "homepage": "https://github.com/cfedk/cdk-pipeline#readme",

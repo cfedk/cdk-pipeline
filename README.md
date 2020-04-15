@@ -19,7 +19,7 @@ npm install --save @cfedk/cdk-pipeline
 import * as cdk from '@aws-cdk/core';
 import { DeploymentPipeline, makeStack } from '@cfedk/cdk-pipeline';
 
-// Make a cdk construct for a particular stage (allows stage-specific) naming of domains, etc.
+// Make a cdk construct for a particular stage (allows stage-specific naming of domains, etc).
 // Note that return type of `makeStage`: `(scope: cdk.Construct) => cdk.Construct`.
 import { makeStage } from './my-app-root';
 
@@ -28,28 +28,31 @@ const app = new cdk.App();
 // Not included in pipeline.
 const devStack = makeStack(app, 'dev', {}, stage('dev'));
 
-const betaStack = makeStack(app, 'myapp-beta', { env: { region: '<beta-region>' } }, stage('beta'));
-const prodStack = makeStage(app, 'myapp-prod', { env: { region: '<prod-region>' } }, stage('prod'));
+const betaStack = makeStack(app, 'myapp-beta', { env: { region: '<beta-region>' } }, makeStage('beta'));
+const prodStack = makeStack(app, 'myapp-prod', { env: { region: '<prod-region>' } }, makeStage('prod'));
 
 new DeploymentPipeline(
     app,
     'myapp-pipeline',
-    env: { region: '<pipeline-region>' },
+    { env: { region: '<pipeline-region>' } },
     {
-        repository: '<this-respository-name>'
-        owner: '<my-github-name>',
-        oauthTokenName: '<github-oauth-token-name'>,
-    }, 
-    [
-        {
-            stageName: 'Beta',
-            stack: betaStack,
-        }, 
-        {
-            stageName: 'Prod',
-            stack: prodStack,
+        sourceConfiguration: {
+            repository: '<this-respository-name>'
+            owner: '<my-github-name>',
+            oauthTokenName: '<github-oauth-token-name'>,
         },
-    ],
+        manualApproval: false,
+        deploymentStages: [
+            {
+                stageName: 'Beta',
+                stack: betaStack,
+            },
+            {
+                stageName: 'Prod',
+                stack: prodStack,
+            },
+        ],
+    },
 );
 ```
 

@@ -8,4 +8,4 @@ phases:
     - tar -xzf build.tar.gz ./
   build:
     commands:
-    - npm run deploy -- -- -- --require-approval never $STACK_NAME
+    - npm run deploy -- --require-approval never $STACK_NAME
