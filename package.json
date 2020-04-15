@@ -5,6 +5,18 @@
   "author": "Conrad de Kerckhove <conrad.dekerckhove@gmail.com>",
   "homepage": "https://github.com/cfedk/cdk-pipeline#readme",
   "license": "ISC",
+  "keywords": [
+    "cdk",
+    "pipeline",
+    "cicd"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cfedk/cdk-pipeline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cfedk/cdk-pipeline/issues"
+  },
   "main": "lib/pipeline.js",
   "types": "lib/pipeline.d.ts",
   "directories": {
@@ -15,13 +27,6 @@
     "lib",
     "buildspec"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/cfedk/cdk-pipeline.git"
-  },
-  "bugs": {
-    "url": "https://github.com/cfedk/cdk-pipeline/issues"
-  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
@@ -29,10 +34,10 @@
     "test:watch": "jest --watchAll",
     "lint": "tslint -p tsconfig.json",
     "prepublishOnly": "npm run test && npm run lint",
-    "clean": "rm -rf dist/*"
+    "clean": "rm -rf lib/*"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.31.0",
+    "@aws-cdk/assert": "^1.32.2",
     "@types/jest": "^25.2.1",
     "@types/js-yaml": "^3.12.2",
     "@types/node": "10.17.5",
@@ -46,10 +51,10 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-codebuild": "^1.32.0",
-    "@aws-cdk/aws-codepipeline": "^1.32.0",
-    "@aws-cdk/aws-codepipeline-actions": "^1.32.0",
-    "@aws-cdk/aws-sns": "^1.32.0",
-    "@aws-cdk/core": "1.32.0"
+    "@aws-cdk/aws-codebuild": "^1.32.2",
+    "@aws-cdk/aws-codepipeline": "^1.32.2",
+    "@aws-cdk/aws-codepipeline-actions": "^1.32.2",
+    "@aws-cdk/aws-sns": "^1.32.2",
+    "@aws-cdk/core": "^1.32.2"
   }
 }
